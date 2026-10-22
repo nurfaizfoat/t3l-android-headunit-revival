@@ -29,6 +29,38 @@ later audit included other changes; 0.3.1 has no equivalent comparison. Thermal
 warnings remain unresolved. [Initial results](optimization-report.md#observed-memory-comparison)
 and [later audit](optimization-audit.md#1-wins-achieved-so-far).
 
+## Android Auto: our setup
+
+For my setup, I removed the stock map apps, then installed **Headunit Reloaded
+(HUR)** to use Android Auto. This was separate from the launcher work documented
+here: HUR was already installed and no standalone map app remained when we
+[audited the unit](optimization-report.md#outcome).
+
+**What is HUR?** [Headunit Reloaded Emulator HUR](https://play.google.com/store/apps/details?id=gb.xxy.hr)
+is a paid Android app, listed under AAWireless, that turns an Android head unit
+or tablet into an **Android Auto receiver**. Your Android phone provides the
+Android Auto experience, including compatible navigation, music and calling
+apps, on the stereo's screen. It is not a map app or our custom launcher.
+
+To try it on your own unit, while parked:
+
+1. **Install HUR on the head unit** from the official Google Play listing above.
+   Check compatibility and the current price before buying.
+2. **Set up Android Auto on your Android phone.** Keep your navigation and
+   music apps on the phone; they do not need to be installed on the head unit.
+3. **Start with USB:** open HUR, connect the phone to a compatible head-unit
+   USB port with a data-capable cable, and approve the connection prompts.
+4. **For wireless**, follow the instructions in your installed HUR version.
+   Support depends on your phone and app versions. The current release notes
+   warn that Android Auto 17.4 broke older wireless startup methods.
+5. **Open the Android Auto tile in T3L Drive** to launch HUR. The tile is a
+   shortcut, not a built-in Android Auto implementation.
+
+Removing stock map apps is **optional cleanup, not required for Android Auto**.
+Keep a recovery path before removing anything, and leave Google services,
+location providers and vehicle-control apps alone. For help, use the
+[developer's support thread](https://xdaforums.com/t/android-4-1-headunit-reloaded-for-android-auto-with-wifi.3432348/).
+
 ## What you need
 
 - An Android head unit with internet access and permission to install apps.
