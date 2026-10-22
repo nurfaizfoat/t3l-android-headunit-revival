@@ -23,10 +23,42 @@ commands. Connecting is only the first stage — it does **not** install this la
 > Do not flash firmware, root the unit, change MCU/CAN settings, or remove apps
 > just because this unit did. Stop if a step does not match your device.
 
+## Our wins — before and after
+
+Here is what we observed on **our unit**, not a promise for every head unit.
+The screenshot above is **0.3.1**; the measurements below were taken at earlier,
+explicitly named stages. We have not recorded an equivalent 0.3.1 comparison.
+
+| What changed | Before: stock launcher | After: first launcher (0.1.0) | Later: dashboard + audit (0.2.1) |
+| --- | ---: | ---: | ---: |
+| **Launcher RAM use** (PSS; lower is better) | 83.6 MiB | **7.2 MiB** | **~9.9 MiB** |
+| **Memory available to Android/apps** (higher is better) | 344.6 MiB | **427.1 MiB** | **401–407 MiB observed** |
+| **Unused swap space** (SwapFree; higher means less swap occupied) | 129.6 MiB | **163.4 MiB** | **183.5 MiB** |
+| Old Theme launcher process | Running | **Absent** — disabled for user 0 | **Absent** — later uninstalled for user 0 |
+
+**In plain English:** the first replacement used about **91% less launcher RAM**
+(~76.4 MiB less). The later dashboard sample was still about **88% lower** than
+stock. More memory was available for other apps in the recorded snapshots.
+MiB is a unit of memory; PSS estimates the launcher's share of physical RAM.
+Swap is Android's overflow/compressed-memory area, **not extra physical RAM**.
+
+**What we kept:** Headunit Reloaded (the Android Auto projection app) and the
+factory radio/Bluetooth/EQ/vehicle stack. Existing standby settings were preserved;
+there was no firmware flash or root invocation.
+
+**Limits:** these are uncontrolled snapshots with different apps/background
+activity, not a speed, cold-boot, battery-life or long-term stability benchmark.
+The later audit also included other approved changes, so its differences cannot
+all be attributed to the launcher. Thermal warnings remain unresolved. Physical
+audio, camera and vehicle-control checks still need the owner while parked.
+Sources: [initial before/after report](optimization-report.md#observed-memory-comparison)
+and [later wins audit](optimization-audit.md#1-wins-achieved-so-far).
+
 ## Start here — connect your head unit to your AI laptop
 
-**Follow in order:** head unit setup (**1–6**) → laptop connection and AI
-inspection (**7–9**) → close debugging when finished (**10**).
+**Follow in order:** head unit setup (**1–6**) → prepare the laptop and draft
+your launcher (**7–8**) → connect and inspect before any installation (**9–10**)
+→ close debugging when finished (**11**).
 
 ### What you need
 
@@ -145,7 +177,7 @@ Normally the commands return to the prompt without a success message.
 
 You do not need `adb pair` or a QR code for this Android 8.1 method.
 **Checkpoint:** no command errors. This is not proof the port is reachable yet;
-step 8 checks the actual laptop connection.
+step 9 checks the actual laptop connection.
 
 ### 6. Find and write down the head unit's IP address
 
@@ -184,7 +216,96 @@ that if the terminal says **command not found** or **not recognized**.
 **Checkpoint:** `adb version` prints a version on the laptop. Python 3 is
 available too; its command may be `python3`, `python`, or `py -3` on Windows.
 
-### 8. Connect from the laptop and approve it on the head unit
+### 8. Create your own launcher with your AI assistant — on the laptop first
+
+**Where: laptop, in the extracted project folder.** You describe the home screen
+you want in everyday language; the assistant writes the code. **Designing and
+building an app does not require a connection to the head unit.** At this stage
+you are making a candidate app, not replacing the working home screen.
+
+#### A. Describe what you want
+
+Use our screenshot as a starting point, or give the assistant your own sketch.
+Tell it:
+
+- **Look:** colours, large readable text, day/night style, and tile arrangement.
+- **Buttons:** Android Auto, Radio, Music, Bluetooth, Apps, Settings and EQ.
+- **Behaviour:** open the existing apps when tapped; handle missing apps politely.
+- **Escape route:** always keep Settings and a way back to the stock launcher.
+
+For example: “A dark dashboard with cyan highlights, one big Android Auto tile
+on the left, four smaller tiles on the right, and large Settings/EQ buttons.”
+Use your own screen size when known; ours is **1024×600**.
+
+#### B. Give your assistant this starter prompt
+
+> Help me create my own lightweight Android car launcher using this project as
+> a starting point. I do not know how to code. Work in a separate copy so the
+> original source stays intact. First show me a proposed layout and explain
+> which files you would change; wait for my approval before editing or building.
+> My design is: [replace this with your colours, layout and buttons].
+> Keep it native and lightweight: no WebView, background service, ads, tracking
+> or unnecessary permissions. Keep Settings, an app picker and a recovery route.
+> Start with ordinary shortcuts to existing apps. Do not carry over this unit's
+> private radio protocol or network-ADB toggle without a separate compatibility
+> and safety review. Use a distinct app identity for my new launcher so it cannot
+> overwrite an existing launcher; update all affected source/manifest references.
+> Read the actual current source and AndroidManifest.xml, not just historical
+> version notes. Use this repo's API-27/1024×600 setup only as a provisional
+> starting point until we inspect my device in step 10. Review the build scripts,
+> check my laptop's prerequisites and explain downloads before running anything.
+> Do not connect to, install on, or change the head unit during this step.
+
+You do not need to edit Java yourself. For reference, the main files are:
+
+| File in `launcher-proposal/` | What your assistant changes there |
+| --- | --- |
+| `src/local/t3l/launcher/DashboardView.java` | Layout, colours, text and touch targets |
+| `src/local/t3l/launcher/MainActivity.java` | What happens when a button is tapped |
+| `src/local/t3l/launcher/AppTargets.java` | Which existing app each shortcut opens — verify these on your own device later |
+| `res/drawable/` | Icons and artwork |
+| `AndroidManifest.xml` | App identity, Android compatibility, permissions and home-screen entry |
+
+#### C. Approve a local build and keep your signing key
+
+Once you like the proposed design, ask the assistant to build an **APK** — the
+Android app installer — **on the laptop only**. The supplied build path was used
+on Linux; it downloads **Linux build tools** and uses Linux paths. On Windows
+or macOS, ask the assistant to propose an adapted toolchain or compatible Linux
+environment first. Do not assume the commands below work unchanged there.
+
+On a compatible Linux laptop, after the assistant checks **Python 3.9+**, a
+compatible **Java runtime**, **OpenSSL** and the downloaded tools' host requirements,
+these commands run **inside your working copy's `launcher-proposal/` folder**:
+
+```sh
+python3 bootstrap-tools.py
+python3 build.py
+```
+
+The first downloads and checks the build tools. The second compiles and signs
+the app. Neither script installs it or contacts the head unit. Stop if a command
+fails and ask the assistant to explain the error rather than skipping checks.
+
+Ask the assistant to show you:
+
+- The APK path recorded in `launcher-proposal/build/latest.json`; the actual
+  file is in `launcher-proposal/build/<timestamp>/t3l-drive.apk`.
+- Its size, hash, signature-verification result and requested permissions.
+- Where your signing files are kept: `.private/` at the project root. On a clean
+  copy, the build creates a new identity if no signing files exist. **Back these
+  up privately and never overwrite or publish them.** Future updates need the
+  same identity; your key cannot update our original signed installation.
+- A preview, if a compatible emulator is available. Treat a proposed layout
+  or mockup as a design aid, not proof it works on the actual head unit.
+
+**Checkpoint:** you have a locally built candidate APK and a backed-up signing
+identity. **Do not install or select it as HOME yet.** Continue with steps 9–10
+to check device compatibility, map its actual apps and plan recovery. If you
+only want to inspect your device for now, you can skip this optional creation
+step and come back after step 10.
+
+### 9. Connect from the laptop and approve it on the head unit
 
 **Where: laptop terminal** (your assistant can run these with your approval).
 Replace the example IP first:
@@ -217,7 +338,7 @@ List of devices attached
 | `offline` | Try `adb disconnect 192.168.1.50:5555`, then reconnect. |
 | Property commands failed in Termux | Your firmware does not allow this method. Stop rather than trying root workarounds. |
 
-### 9. Ask your AI assistant to inspect first — not debloat or install
+### 10. Inspect the device, then review your launcher before installing
 
 **Where: your laptop's AI assistant.** Replace the example IP, then paste:
 
@@ -244,16 +365,33 @@ This saves a timestamped private folder under `evidence/` on the laptop.
 Some queries can be slow or permission-denied; do not retry with elevated
 privileges. This is a diagnostic snapshot, **not a complete device backup**.
 
-**Want the launcher in the picture?** After reviewing your device's report,
-ask your assistant to review the [launcher source/build guide](launcher-proposal/README.md)
-and [recovery plan](recovery-plan.md). The public repo is source-only: it has
-no ready-to-install APK and no original signing key. Building, testing,
-installing and changing the default home screen are **separate, approval-gated
-steps**, not automatic consequences of connecting. Keep the stock launcher
-available until you have verified a way back; do not copy this unit's Theme
-uninstall as a beginner step.
+**Ready to try your launcher from step 8?** After reviewing the device report,
+ask your assistant to review the [launcher source/build guide](launcher-proposal/README.md),
+the **current source/manifest**, and [recovery plan](recovery-plan.md). Some build
+guide prose describes earlier releases; the manifest currently identifies 0.3.1.
+The public repo has no ready-made APK or original signing key. Ask the assistant
+to walk through these gates, **one approval at a time**:
 
-### 10. Turn network debugging off when finished
+1. **Adapt and rebuild:** match your actual Android API, screen size and installed
+   app destinations. Remove unsupported/vendor-specific features. Check the
+   final APK's identity, permissions and signing key.
+2. **Plan recovery before installation:** record the existing HOME app and a
+   verified route back to it through Settings/ADB. Keep the stock launcher
+   installed, enabled and available. Do not blindly run `deploy.py` stages:
+   they were written for our specific firmware, package and recovery records.
+3. **Install only after approval:** open the candidate as a normal app first,
+   without making it the default home screen. Check its layout, every shortcut,
+   Settings escape, crashes and RAM use. A shortcut opening an app does not
+   prove the speakers, camera or vehicle controls still work — check while parked.
+4. **Choose it as HOME only after testing:** ask the assistant to explain your
+   device's default-home selection and rollback procedure, then approve that
+   separate change. Keep the old launcher available while validating daily use.
+
+**Checkpoint:** either you stop safely at inspection, or you have tested your
+own launcher and know how to return to stock. Removing Theme is **not required**
+to create or try a launcher; do not copy our later uninstall as a beginner step.
+
+### 11. Turn network debugging off when finished
 
 **Where: Termux on the head unit**, once you no longer need the laptop connection:
 
@@ -284,7 +422,7 @@ Wi-Fi alone also does not prove the port is closed.
 If the off commands fail or the listener still responds, keep the unit off
 untrusted networks and get help verifying closure. Do not assume a reboot closes it on
 every firmware. On our tested unit the enable setting is not persistent across
-a cold boot; a later session may require steps 5, 6 and 8 again.
+a cold boot; a later session may require steps 5, 6 and 9 again.
 
 ### Sources and compatibility notes
 
@@ -348,7 +486,7 @@ retained in `archive/preconnection/` as historical notes, not current findings.
 <details>
 <summary>Technical notes: collection, historical evidence and offline tests</summary>
 
-Collection instructions are in step 9 above. Diagnostic dumps themselves create
+Collection instructions are in step 10 above. Diagnostic dumps themselves create
 transient workload and logs; they are not zero-impact idle benchmarks.
 
 The script never invokes `su`, changes permissions/settings, sends vehicle
