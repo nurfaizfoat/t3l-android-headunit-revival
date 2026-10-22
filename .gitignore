@@ -1,0 +1,12 @@
+# Private device evidence and copied vendor software must not be published.
+evidence/
+.private/
+changes/
+__pycache__/
+*.pyc
+# Source-only launcher proposal: build outputs are not discovery evidence.
+launcher-proposal/build/
+launcher-proposal/.gradle/
+*.apk
+# Regenerable offline analysis cache (analyse-apks.py).
+androguard.db
