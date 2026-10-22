@@ -1,5 +1,11 @@
 # T3L Revival
 
+![T3L Drive 0.3.1 home launcher on the head unit](screenshots/t3l-drive-0.3.1-home.png)
+
+*The current T3L Drive 0.3.1 home launcher running on the unit, captured on
+21 October 2026: Android Auto projection card, Radio with station names,
+Music, Bluetooth, Apps, Settings and EQ tiles.*
+
 Documentation and tooling for the read-only discovery and reversible
 optimisation of a TOPWAY/Allwinner T3L Android 8.1 car head unit — replacing a
 laggy stock launcher with a lightweight native one, measuring what actually
@@ -10,6 +16,63 @@ changed, and keeping every step rollback-safe.
 > substitute for exact-device evidence. Do not flash, root or debloat a head
 > unit based on this repo alone.
 
+## Publish your own project — layman "vibecode" step-by-step
+
+This repo doubles as a worked example: here is exactly how a project folder on
+your Linux machine becomes a public GitHub repository, in seven steps. The
+full, explained version is in [PUBLISHING.md](PUBLISHING.md).
+
+1. **Keep secrets out first.** Create a `.gitignore` listing anything you
+   would never publish — keys, raw dumps, screenshots, build outputs:
+
+   ```gitignore
+   evidence/
+   .private/
+   changes/
+   __pycache__/
+   *.apk
+   ```
+
+2. **Scrub personal traces** from files you *will* publish: Wi-Fi names, LAN
+   IPs, real names → placeholders like `<your-ssid>` and `<unit-ip>`.
+
+3. **Add a `LICENSE`** (MIT is the simplest, https://choosealicense.com).
+
+4. **Write a stranger-friendly README**: the first paragraphs should explain
+   the project to someone who has never heard of it, plus any warning.
+
+5. **Commit locally and review the staged list:**
+
+   ```sh
+   git init -b main
+   git add -A
+   git status --short      # ← read every line; if a private file
+                           #   appears here, fix .gitignore and
+                           #   git rm --cached <file> before continuing
+   git commit -m "Initial public release"
+   ```
+
+6. **Create the GitHub repo and push in one command:**
+
+   ```sh
+   gh repo create my-repo-name --public --source=. --push
+   ```
+
+   If the push complains about SSH keys, switch GitHub CLI to HTTPS once:
+
+   ```sh
+   gh config set git_protocol https
+   gh auth setup-git
+   git remote set-url origin https://github.com/<your-username>/my-repo-name.git
+   git push -u origin main
+   ```
+
+7. **Review it like a stranger** — open the repo URL in a browser, check the
+   README renders, no private file appears, and the license shows.
+
+Future updates are two lines: `git add -A && git commit -m "what changed"`
+followed by `git push`. Never skip re-reading `git status --short` first.
+
 ## What is and is not in this repo
 
 Published: the discovery reports, package inventory CSVs, and the
@@ -17,13 +80,14 @@ Published: the discovery reports, package inventory CSVs, and the
 deployment scripts) under the MIT license.
 
 Not published (kept private by `.gitignore`): the timestamped `evidence/`
-folders with raw device dumps and copied vendor APKs, the `changes/` journals
-with screenshots, and `.private/` with the launcher signing keys. Repo readers
+folders with raw device dumps and copied vendor APKs, the `changes/` journals,
+and `.private/` with the launcher signing keys — only the single final
+launcher screenshot above was copied out as `screenshots/`. Repo readers
 can regenerate their own evidence with `collect-readonly.py`.
 
 ## Current state — approved launcher optimisation applied
 
-**T3L Drive 0.1.1 is installed/default HOME; Theme is now uninstalled for user 0,
+**T3L Drive 0.3.1 is installed/default HOME; Theme is now uninstalled for user 0,
 including its user data—not merely disabled.** Headunit Reloaded is preserved.
 Standby settings were not changed. The factory ROM copy was not erased.
 See [current removal scope and recovery limits](theme-removal.md),
